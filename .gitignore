@@ -1,0 +1,85 @@
+﻿# Raw/licensed climate data -- do not redistribute
+# IMD binary files are user-managed and must stay local.
+datasets/raw_data/**/*
+!datasets/raw_data/.gitkeep
+!datasets/raw_data/rainfall/
+!datasets/raw_data/rainfall/.gitkeep
+!datasets/raw_data/maxtemp/
+!datasets/raw_data/maxtemp/.gitkeep
+!datasets/raw_data/mintemp/
+!datasets/raw_data/mintemp/.gitkeep
+*.grd
+*.GRD
+*.Grd
+
+# Generated clean datasets and exports -- regenerate locally from licensed inputs
+datasets/clean_data/**/*
+!datasets/clean_data/.gitkeep
+maharashtra_climate_*.npz
+*.npz
+*.npy
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.joblib
+*.csv
+*.tsv
+!outputs/training/run_2026-06-28_181137/training_history.csv
+!outputs/training/run_2026-06-28_181137/test_metrics.csv
+
+# Generated training runs -- force-add only curated public artifacts intentionally
+outputs/training/**
+!outputs/training/
+!outputs/training/run_2026-06-28_181137/
+!outputs/training/run_2026-06-28_181137/metrics.json
+!outputs/training/run_2026-06-28_181137/test_metrics.csv
+!outputs/training/run_2026-06-28_181137/training_history.csv
+!outputs/training/run_2026-06-28_181137/test_metrics_comparison.png
+!outputs/training/run_2026-06-28_181137/best_model.pt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+ENV/
+
+# Frontend / Node
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
