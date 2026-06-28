@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="assets/varun-banner.svg" alt="VARUN - Virtual Atmospheric Replica for Understanding and Nowcasting" width="100%" />
 </p>
 
@@ -29,8 +29,9 @@ This repository is a working partial prototype, not a full national operational 
 | Grid resolution | IMD native 0.25 degree rainfall grid, not ward-level |
 | Forecast model | 2-layer ConvLSTM, 10 past days to predict day+1 |
 | Evaluation | Persistence and day-of-year climatology baselines |
-| Dashboard | Vite + React + Leaflet map with local Maharashtra boundary overlay |
-| Data policy | Raw and clean climate datasets are gitignored and must be downloaded/regenerated locally |
+| Backend API | FastAPI serving 5 endpoints with uvicorn |
+| Dashboard | Vite + React + Leaflet map connected to real FastAPI backend |
+| Data policy | Raw, clean, and realtime datasets are gitignored and must stay local |
 
 ## Verified Results
 
@@ -57,15 +58,18 @@ These are real metrics from the committed training artifacts, not placeholder pr
 - Timestamped dataset builder that processes only complete rainfall + maxT + minT year triplets.
 - GPU-first ConvLSTM training and baseline evaluation script.
 - Public-safe training result bundle with metrics, training history, comparison figure, and a small checkpoint.
-- React + Leaflet dashboard with a 27 x 33 grid contract clipped to Maharashtra's real boundary.
-- Explicit local boundary drawing so the grid does not depend on base-map border styling.
+- **FastAPI backend server** (`api_server.py`) serving 5 real data endpoints (climatology, historical dates, nowcast, tomorrow's forecast, and training metrics) with strict error handling.
+- **Vite React + Leaflet frontend** connected to the real backend, with full mode switching (climatology, history date scrubber, nowcast, and tomorrow's forecast) and channel switching (Rainfall, Max Temp, Min Temp).
+- **Validation metrics chart** rendered dynamically using real metrics from the FastAPI backend.
+- Explicit local boundary drawing so the grid does not depend on base-map border styling (450 clipped Maharashtra cells).
 
 ## Data Safety
 
-Raw and clean climate data are **not committed**.
+Raw, clean, and realtime climate data are **not committed**.
 
 - IMD raw `.GRD` / `.grd` files stay under `datasets/raw_data/` locally.
 - Generated clean `.npz` datasets stay under `datasets/clean_data/` locally.
+- Realtime state and prediction `.npz` files stay under `datasets/realtime/` locally.
 - CSV exports and full prediction tensors are ignored by default.
 - `test_predictions.npz` is intentionally not committed because it contains held-out truth tensors derived from licensed source data.
 - `best_model.pt` is committed because it is small, about 277 KB, and contains model weights plus metadata rather than source grids.
@@ -74,7 +78,7 @@ Download IMD data directly from official sources before rebuilding locally:
 
 - Rainfall 0.25 degree grid: https://www.imdpune.gov.in/cmpg/Griddata/Rainfall_25_Bin.html
 - Maximum temperature 1.0 degree grid: https://imdpune.gov.in/cmpg/Griddata/Max_1_Bin.html
-- Minimum temperature 1.0 degree grid: https://www.imdpune.gov.in/cmpg/Griddata/Min_1_Bin.html
+- Minimum temperature 1.0 degree grid: https://imdpune.gov.in/cmpg/Griddata/Min_1_Bin.html
 
 ## Project Layout
 
@@ -83,13 +87,26 @@ BAH2026/
 ├── assets/                                    # README banner and public visual assets
 ├── datasets/
 │   ├── raw_data/{rainfall,maxtemp,mintemp}/   # local only, gitignored except .gitkeep
-│   └── clean_data/                            # local only, gitignored except .gitkeep
+│   ├── clean_data/                            # local only, gitignored except .gitkeep
+│   └── realtime/                              # local only, gitignored except .gitkeep
 ├── frontend/                                  # Vite React + Leaflet dashboard
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ClimateMap.tsx                 # Renders the Leaflet map overlay
+│   │   │   ├── DateScrubber.tsx               # Pick historical dates
+│   │   │   └── ValidationChart.tsx            # Plot RMSE comparison charts
+│   │   ├── api.ts                             # Backend API client
+│   │   ├── App.tsx                            # Main dashboard application
+│   │   └── grid.ts                            # Grid spatial clipping helper
 ├── outputs/training/run_2026-06-28_181137/    # public-safe result summary
 ├── scripts/
 │   ├── imd_parser.py
 │   └── maharashtra_fusion.py
+├── api_server.py                              # FastAPI backend server
 ├── build_dataset.py
+├── fetch_realtime.py                          # Fetch latest realtime data from IMD
+├── nowcast.py                                 # Nowcasting report generator
+├── predict_latest.py                          # Prediction generator
 ├── npz_to_csv.py
 ├── train_model.py
 ├── requirements.txt
@@ -117,30 +134,37 @@ python train_model.py --epochs 10 --batch-size 32
 
 For tiny local syntax or smoke checks only, pass `--device cpu` deliberately. Do not run full training on a local CPU machine.
 
-## Run The Frontend
+## Run The System
 
+To run the full prototype locally, start both the FastAPI backend and the React dev server:
+
+### 1. Run the Backend API Server
+
+First, install the Python requirements:
+```bash
+python -m pip install -r requirements.txt
+```
+
+Start the FastAPI application with Uvicorn:
+```bash
+python -m uvicorn api_server:app --host 127.0.0.1 --port 8000
+```
+The server will run at http://127.0.0.1:8000.
+
+### 2. Run the Frontend Dev Server
+
+In a new terminal window:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-The dashboard uses Leaflet + OpenStreetMap tiles and does not require an API key, payment card, or backend service.
-
-Current frontend scope:
-
-- Maharashtra map centered on the IMD grid region.
-- 27 x 33 placeholder grid contract.
-- Grid clipped to the real Maharashtra boundary by cell center point.
-- 450 rendered cells after clipping, down from the rectangular 891 cells.
-- Explicit local boundary outline drawn above the grid.
-- Reserved panels for future what-if controls, forecast output, and anomaly flags.
+The Vite development server will start, typically at http://localhost:5174/ or http://localhost:5173/ (check terminal output), and requests to `/api` will be proxied to the backend.
 
 ## Roadmap
 
-- Add the analog what-if engine using historical nearest-neighbour matching.
-- Add grid-cell rainfall and heat anomaly flagging from historical percentiles.
-- Connect real model outputs into the frontend forecast panel.
+- Add the analog what-if engine using historical nearest-neighbour matching (perturbation sliders).
+- Add grid-cell rainfall and heat anomaly flagging from historical percentiles (percentile highlights).
 - Integrate INSAT/MOSDAC channels later if access is available.
 
 ## Framing Notes
