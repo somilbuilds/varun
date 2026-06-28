@@ -197,6 +197,37 @@ All of this is implemented and tested against real uploaded IMD files
   `best_model.pt` is small (~277 KB) and safe to commit. `test_predictions.npz`
   contains held-out truth tensors derived from licensed source data, so it
   must stay gitignored and be regenerated locally/Colab-side when needed.
+- `fetch_realtime.py` — Stage 2.5 realtime/nowcasting data bridge. Uses
+  `imdlib` to download IMD near-real-time rainfall (`rain`, 0.25°) and
+  max/min temperature (`tmax`/`tmin`, 0.5°) grids without any API key or
+  login. This is separate from the historical archive `.GRD` pipeline:
+  it writes a latest-state file to `datasets/realtime/`, not to
+  `datasets/clean_data/`, and those realtime `.npz`/`.grd` files remain
+  gitignored. The script searches backward for the latest complete
+  10-day window where all three variables are available, then crops to
+  Maharashtra and regrids realtime 0.5° temperature onto the 0.25°
+  rainfall grid using the same nearest-neighbour helper as the historical
+  fusion code.
+- Realtime fetch verified end-to-end on 2026-06-29 IST. Observed IMD lag:
+  rainfall was available for 2026-06-28, but max temperature for
+  2026-06-28 was not, so the latest complete all-variable window was
+  2026-06-18 through 2026-06-27. `fetch_realtime.py` saved
+  `datasets/realtime/maharashtra_latest_state.npz`, shape
+  `(10, 27, 33, 3)`, fetched at `2026-06-28T21:09:05+00:00`, data as of
+  `2026-06-27`, with NaN fractions rain=0.053, maxT=0.045, minT=0.045
+  after explicitly masking realtime missing flags (`-999.0`, `99.9`).
+- `nowcast.py` — loads the latest realtime state and reports it honestly as
+  the current Maharashtra climate state **as of the IMD data date**, not as
+  instantaneous live weather. Verified output for data as of 2026-06-27:
+  rainfall mean 3.73 mm/day, max temp mean 33.93°C, min temp mean 24.27°C
+  over valid Maharashtra grid cells.
+- `predict_latest.py` — loads the most recent 10 realtime days and reuses
+  `MaharashtraConvLSTM` from `train_model.py` plus the committed
+  `best_model.pt` checkpoint to predict the next day's Maharashtra grid.
+  It does inference only; it does not train locally. Verified output from
+  the 2026-06-18..2026-06-27 realtime window predicted 2026-06-28 with
+  rainfall mean 5.51 mm/day, max temp mean 33.65°C, min temp mean 23.94°C
+  after clipping negative rainfall predictions to 0.
 
 ## 6. What's NOT built yet (next steps, in order)
 
@@ -236,9 +267,13 @@ BAH2026/
 │   └── maharashtra_fusion.py
 ├── frontend/                                  <- Vite React + Leaflet/OpenStreetMap dashboard shell
 ├── outputs/training/run_2026-06-28_181137/    <- public-safe metrics/checkpoint artifacts
+├── datasets/realtime/                         <- latest realtime outputs (gitignored except .gitkeep)
 ├── build_dataset.py
 ├── npz_to_csv.py
 ├── train_model.py
+├── fetch_realtime.py
+├── nowcast.py
+├── predict_latest.py
 ├── requirements.txt
 ├── .gitignore        <- excludes raw_data/*, clean_data/*.npz, __pycache__, venv
 ├── README.md
@@ -247,7 +282,7 @@ BAH2026/
 
 - Python venv already set up by the user (Windows, PowerShell).
 - Python dependencies currently tracked in `requirements.txt`: `numpy`,
-  `torch`, and `matplotlib`.
+  `torch`, `matplotlib`, and `imdlib`.
 - Frontend dependencies are managed separately in `frontend/package.json`
   and `frontend/package-lock.json`. The frontend uses Leaflet with
   OpenStreetMap tiles and does not require an API key, token, signup, or

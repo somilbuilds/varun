@@ -15,6 +15,9 @@ datasets/raw_data/**/*
 # Generated clean datasets and exports -- regenerate locally from licensed inputs
 datasets/clean_data/**/*
 !datasets/clean_data/.gitkeep
+datasets/realtime/**/*
+!datasets/realtime/
+!datasets/realtime/.gitkeep
 maharashtra_climate_*.npz
 *.npz
 *.npy
