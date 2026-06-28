@@ -1,4 +1,4 @@
-﻿# PROJECT CONTEXT — VARUN (ISRO BAH 2026, PS-5)
+# PROJECT CONTEXT — VARUN (ISRO BAH 2026, PS-5)
 
 This file exists so any AI coding assistant (Codex, Claude, Copilot, etc.)
 can pick up this project without needing the full chat history re-explained.
@@ -221,13 +221,17 @@ All of this is implemented and tested against real uploaded IMD files
   instantaneous live weather. Verified output for data as of 2026-06-27:
   rainfall mean 3.73 mm/day, max temp mean 33.93°C, min temp mean 24.27°C
   over valid Maharashtra grid cells.
-- `predict_latest.py` — loads the most recent 10 realtime days and reuses
-  `MaharashtraConvLSTM` from `train_model.py` plus the committed
-  `best_model.pt` checkpoint to predict the next day's Maharashtra grid.
-  It does inference only; it does not train locally. Verified output from
-  the 2026-06-18..2026-06-27 realtime window predicted 2026-06-28 with
-  rainfall mean 5.51 mm/day, max temp mean 33.65°C, min temp mean 23.94°C
-  after clipping negative rainfall predictions to 0.
+- `api_server.py` — FastAPI backend (5 endpoints) serving real IMD data from local .npz files
+  and the ConvLSTM metrics.json to the frontend. CORS-enabled, dev-mode entry point via uvicorn.
+  Errors loudly (HTTP 404/503) if underlying files are missing — never falls back to fake data.
+  Run: `uvicorn api_server:app --host 127.0.0.1 --port 8000`
+  Endpoints:
+    - GET /api/health — liveness check
+    - GET /api/historical/climatology — per-cell temporal mean across all 4018 days
+    - GET /api/historical/{YYYY-MM-DD} — real historical grid for any date 2015-2025
+    - GET /api/nowcast — latest realtime state (data_as_of clearly returned)
+    - GET /api/forecast/tomorrow — ConvLSTM prediction grid + prediction_date
+    - GET /api/validation-metrics — contents of metrics.json verbatim
 
 ## 6. What's NOT built yet (next steps, in order)
 
@@ -241,11 +245,9 @@ All of this is implemented and tested against real uploaded IMD files
    cell against that cell's historical percentile for the same day-of-year;
    flag cells above e.g. the 90th percentile. Pure post-processing on
    existing outputs, no new model needed.
-3. **Frontend dashboard, next layer** — the Leaflet-based React shell exists,
-   but the what-if sliders, 3-day forecast chart, and anomaly flag display
-   are intentionally blank reserved components. Next frontend work should
-   connect those panels only after real model/analog/anomaly outputs exist;
-   do not fake them.
+3. **Frontend dashboard, remaining panels** — what-if sliders and anomaly flag
+   display are still placeholder panels. Connect them only after the analog
+   engine and anomaly flagging are built.
 4. **(Optional, mentioned only, not required to build):** "Bhuvan
    compatibility" — output map layers in standard WMS/WFS format. This is
    a documentation/positioning claim, not a feature that needs actual

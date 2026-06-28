@@ -1,4 +1,6 @@
+fastapi
 imdlib
 matplotlib
 numpy
 torch
+uvicorn[standard]
