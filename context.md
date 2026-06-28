@@ -1,4 +1,4 @@
-# PROJECT CONTEXT — Maharashtra Climate Digital Twin (ISRO BAH 2026, PS-5)
+﻿# PROJECT CONTEXT — VARUN (ISRO BAH 2026, PS-5)
 
 This file exists so any AI coding assistant (Codex, Claude, Copilot, etc.)
 can pick up this project without needing the full chat history re-explained.
@@ -8,7 +8,7 @@ Read this fully before writing or changing any code.
 
 ## 1. What this project actually is
 
-A hackathon submission for **ISRO Bharatiya Antariksh Hackathon 2026**,
+**VARUN — Virtual Atmospheric Replica for Understanding & Nowcasting** is a hackathon submission for **ISRO Bharatiya Antariksh Hackathon 2026**,
 **Problem Statement 5: "AI-Powered Digital Twin of India's Climate using
 India's National Data."**
 
@@ -21,7 +21,7 @@ Round 1 deadline: **July 1, 2026, 11:59 PM IST.**
 
 ## 2. The core idea (locked, do not redefine)
 
-> A Maharashtra-pilot, India-scalable AI digital twin that fuses IMD ground
+> VARUN is a Maharashtra-pilot, India-scalable AI digital twin that fuses IMD ground
 > observations with INSAT satellite data into one climate state, predicts
 > rainfall/temperature short-term, and lets a user run "what-if" scenarios
 > with explainable, analog-based outputs.
@@ -275,3 +275,4 @@ BAH2026/
   (2009), Atmospheric Science Letters.
 - IMD data contact: cmagpune@gmail.com (Climate Prediction Group, Pune)
 - MOSDAC feedback contact: admin@mosdac.gov.in
+

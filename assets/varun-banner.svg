@@ -1,0 +1,55 @@
+﻿<svg width="1280" height="420" viewBox="0 0 1280 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">VARUN project banner</title>
+  <desc id="desc">Banner for VARUN, a Maharashtra pilot climate digital twin using Indian national climate data.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1280" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#08111f"/>
+      <stop offset="0.48" stop-color="#114a5f"/>
+      <stop offset="1" stop-color="#e3a72f"/>
+    </linearGradient>
+    <radialGradient id="monsoon" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(945 80) rotate(128) scale(500 300)">
+      <stop stop-color="#d9f99d" stop-opacity="0.72"/>
+      <stop offset="0.48" stop-color="#67e8f9" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="420" rx="34" fill="url(#sky)"/>
+  <rect width="1280" height="420" rx="34" fill="url(#monsoon)"/>
+  <path d="M0 315C125 270 193 316 314 274C438 232 472 143 619 154C747 164 792 246 914 228C1065 206 1127 94 1280 126V420H0V315Z" fill="#062033" fill-opacity="0.52"/>
+  <path d="M0 352C147 324 251 360 390 320C537 278 583 222 730 250C891 281 1016 348 1280 290V420H0V352Z" fill="#0b766d" fill-opacity="0.28"/>
+  <g opacity="0.22" stroke="#e0f2fe" stroke-width="1">
+    <path d="M80 70H1200"/>
+    <path d="M80 122H1200"/>
+    <path d="M80 174H1200"/>
+    <path d="M80 226H1200"/>
+    <path d="M80 278H1200"/>
+    <path d="M160 42V350"/>
+    <path d="M250 42V350"/>
+    <path d="M340 42V350"/>
+    <path d="M430 42V350"/>
+    <path d="M520 42V350"/>
+    <path d="M610 42V350"/>
+    <path d="M700 42V350"/>
+    <path d="M790 42V350"/>
+    <path d="M880 42V350"/>
+    <path d="M970 42V350"/>
+    <path d="M1060 42V350"/>
+    <path d="M1150 42V350"/>
+  </g>
+  <g opacity="0.85" filter="url(#softShadow)">
+    <path d="M903 129L931 116L969 126L987 154L1024 162L1034 193L1017 224L1030 249L1005 276L963 269L941 289L903 279L878 251L846 247L831 215L846 183L835 158L864 136L903 129Z" fill="#d9f99d" fill-opacity="0.18" stroke="#f8fafc" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M879 168H1002M860 207H1022M874 247H1004M889 137V279M929 119V288M970 128V269" stroke="#bae6fd" stroke-opacity="0.42" stroke-width="2"/>
+  </g>
+  <g opacity="0.72">
+    <path d="M742 118C808 88 873 90 947 119" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
+    <path d="M704 159C803 113 906 119 1009 170" stroke="#67e8f9" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 18"/>
+    <path d="M672 203C790 161 927 169 1057 232" stroke="#bbf7d0" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 16"/>
+  </g>
+  <text x="82" y="116" fill="#e0f2fe" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" letter-spacing="3">ISRO BAH 2026 - PS5</text>
+  <text x="78" y="213" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="94" font-weight="850" letter-spacing="2">VARUN</text>
+  <text x="83" y="270" fill="#fef9c3" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="30" font-weight="650">Virtual Atmospheric Replica for Understanding &amp; Nowcasting</text>
+  <text x="83" y="320" fill="#dbeafe" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="500">Maharashtra pilot climate digital twin from IMD observations, ConvLSTM baselines, and clipped grid visualization</text>
+</svg>
