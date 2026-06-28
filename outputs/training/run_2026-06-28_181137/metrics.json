@@ -1,0 +1,107 @@
+{
+  "created_at": "2026-06-28T18:11:37",
+  "data_file": "maharashtra_climate_2015-2025_built_2026-06-28_2208.npz",
+  "data_shape": [
+    4018,
+    27,
+    33,
+    3
+  ],
+  "date_range": [
+    "2015-01-01",
+    "2025-12-31"
+  ],
+  "split": {
+    "train_end": "2022-12-31",
+    "validation_end": "2023-12-31",
+    "test_start": "2024-01-01",
+    "test_end": "2025-12-31",
+    "train_targets": 2912,
+    "validation_targets": 365,
+    "test_targets": 731
+  },
+  "training": {
+    "epochs_requested": 10,
+    "epochs_completed": 10,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "patience": 3,
+    "seed": 42,
+    "device": "cuda",
+    "parameter_count": 68211
+  },
+  "metrics": [
+    {
+      "method": "convlstm",
+      "channel": "rainfall",
+      "unit": "mm",
+      "rmse": 9.608177900388357,
+      "mae": 3.6104868941831,
+      "valid_values": 616964
+    },
+    {
+      "method": "convlstm",
+      "channel": "max_temp",
+      "unit": "degC",
+      "rmse": 1.0516982489654894,
+      "mae": 0.7775771278255885,
+      "valid_values": 627198
+    },
+    {
+      "method": "convlstm",
+      "channel": "min_temp",
+      "unit": "degC",
+      "rmse": 0.8287968931416627,
+      "mae": 0.6255616347732493,
+      "valid_values": 627198
+    },
+    {
+      "method": "persistence",
+      "channel": "rainfall",
+      "unit": "mm",
+      "rmse": 12.471708477654163,
+      "mae": 4.134330169318785,
+      "valid_values": 616964
+    },
+    {
+      "method": "persistence",
+      "channel": "max_temp",
+      "unit": "degC",
+      "rmse": 1.0520445544668773,
+      "mae": 0.7596160811039618,
+      "valid_values": 627198
+    },
+    {
+      "method": "persistence",
+      "channel": "min_temp",
+      "unit": "degC",
+      "rmse": 0.8815327340378181,
+      "mae": 0.6422639826992274,
+      "valid_values": 627198
+    },
+    {
+      "method": "climatology",
+      "channel": "rainfall",
+      "unit": "mm",
+      "rmse": 11.526110790064484,
+      "mae": 4.254046382229211,
+      "valid_values": 616964
+    },
+    {
+      "method": "climatology",
+      "channel": "max_temp",
+      "unit": "degC",
+      "rmse": 2.0236051162399415,
+      "mae": 1.4725879240411734,
+      "valid_values": 627198
+    },
+    {
+      "method": "climatology",
+      "channel": "min_temp",
+      "unit": "degC",
+      "rmse": 1.8442872596332045,
+      "mae": 1.341748084148701,
+      "valid_values": 627198
+    }
+  ]
+}

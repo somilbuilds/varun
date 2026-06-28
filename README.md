@@ -1,95 +1,113 @@
-# Maharashtra Climate Digital Twin (BAH 2026 — PS5)
+﻿# Maharashtra Climate Digital Twin
 
-AI-powered digital twin pilot for Maharashtra, fusing IMD ground-based gridded
-rainfall/temperature data with (planned) INSAT satellite observations to
-produce short-term climate predictions and "what-if" scenario analysis.
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-ConvLSTM-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=111827)](https://vite.dev/)
+[![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Built for ISRO Bharatiya Antariksh Hackathon 2026 — Problem Statement 5
-(AI-Powered Digital Twin of India's Climate using India's National Data).
+A Maharashtra-pilot climate digital twin prototype for **ISRO Bharatiya Antariksh Hackathon 2026, Problem Statement 5: AI-Powered Digital Twin of India's Climate using India's National Data**.
 
-## What's actually implemented here (real, runnable code)
+The prototype currently fuses IMD gridded rainfall, maximum temperature, and minimum temperature into one Maharashtra climate tensor, trains a small ConvLSTM one-day forecast model on GPU, compares it against simple baselines, and visualizes the Maharashtra grid in a React + Leaflet dashboard.
 
-- A verified binary parser for IMD's `.GRD` gridded rainfall and
-  temperature format (`scripts/imd_parser.py`)
-- A Maharashtra bounding-box crop + temperature regridding step that fuses
-  rainfall + max temp + min temp into one aligned tensor
-  (`scripts/maharashtra_fusion.py`)
-- A pipeline script that scans any number of yearly raw files and builds
-  one clean, versioned dataset file (`build_dataset.py`)
-- A Vite + React frontend using Leaflet with OpenStreetMap tiles, centered
-  on Maharashtra with the real 27x33 grid footprint wired to placeholder local JSON
-  (`frontend/`)
-- A local Maharashtra state boundary GeoJSON overlay from the public
-  `datta07/INDIAN-SHAPEFILES` repository, used to draw the state outline
-  explicitly and clip grid cells by center point
+This is a working partial prototype, not a full national operational climate twin. INSAT/MOSDAC fusion, analog what-if scenarios, and anomaly flagging are designed next steps.
 
-ConvLSTM training, the what-if scenario engine, and anomaly computation
-are documented in the proposal deck and built incrementally on top of this
-verified data pipeline. The frontend currently reserves space for those
-panels without implementing fake functionality.
+![Maharashtra clipped grid verification](frontend/maharashtra-boundary-clipped-verification.png)
 
-## Project structure
+## What Is Built
 
-```
+| Area | Current status |
+| --- | --- |
+| IMD parsing | Verified binary readers for rainfall `.grd` and max/min temperature `.GRD` files |
+| Maharashtra fusion | Crop + nearest-neighbour regrid to a `(days, 27, 33, 3)` tensor |
+| Clean dataset pipeline | Timestamped `.npz` builder for all complete year triplets |
+| Forecast model | 2-layer ConvLSTM, 10 past days to predict next day |
+| Baselines | Persistence and day-of-year climatology |
+| Frontend | Vite + React + Leaflet dashboard with clipped Maharashtra grid overlay |
+| Boundary handling | Local Maharashtra GeoJSON outline drawn explicitly over the grid |
+
+## Verified Results
+
+Training was run on a GPU runtime, not on local CPU. The committed public-safe result bundle is in `outputs/training/run_2026-06-28_181137/`.
+
+Held-out test period: **2024-01-01 to 2025-12-31**  
+Training period: **2015-01-01 to 2022-12-31**  
+Validation period: **2023-01-01 to 2023-12-31**
+
+| Method | Rainfall RMSE | Max Temp RMSE | Min Temp RMSE |
+| --- | ---: | ---: | ---: |
+| ConvLSTM | **9.61 mm** | **1.05 degC** | **0.83 degC** |
+| Persistence | 12.47 mm | 1.05 degC | 0.88 degC |
+| Climatology | 11.53 mm | 2.02 degC | 1.84 degC |
+
+These are real metrics from the committed run artifacts, not placeholder slide numbers.
+
+## Data Safety
+
+Raw and clean climate data are **not committed**.
+
+- IMD raw `.GRD` / `.grd` files stay under `datasets/raw_data/` locally.
+- Generated clean `.npz` datasets stay under `datasets/clean_data/` locally.
+- CSV exports and full prediction tensors are ignored by default.
+- `test_predictions.npz` is intentionally not committed because it contains held-out truth tensors derived from licensed source data.
+- The committed checkpoint is small (`best_model.pt`, about 277 KB) and contains model weights plus metadata, not raw source grids.
+
+Download IMD data directly from official sources before rebuilding locally:
+
+- Rainfall 0.25 degree grid: https://www.imdpune.gov.in/cmpg/Griddata/Rainfall_25_Bin.html
+- Maximum temperature 1.0 degree grid: https://imdpune.gov.in/cmpg/Griddata/Max_1_Bin.html
+- Minimum temperature 1.0 degree grid: https://www.imdpune.gov.in/cmpg/Griddata/Min_1_Bin.html
+
+## Project Layout
+
+```text
 BAH2026/
 ├── datasets/
-│   ├── raw_data/
-│   │   ├── rainfall/      <- place Rainfall_ind{YEAR}_rfp25.grd files here
-│   │   ├── maxtemp/       <- place Maxtemp_MaxT_{YEAR}.GRD files here
-│   │   └── mintemp/       <- place Mintemp_MinT_{YEAR}.GRD files here
-│   └── clean_data/        <- build_dataset.py writes output .npz files here
+│   ├── raw_data/{rainfall,maxtemp,mintemp}/   # local only, gitignored
+│   └── clean_data/                            # local only, gitignored
+├── frontend/                                  # Vite React + Leaflet dashboard
+├── outputs/training/run_2026-06-28_181137/    # public-safe result summary
 ├── scripts/
-│   ├── imd_parser.py      <- low-level binary format reader
-│   └── maharashtra_fusion.py <- crop / regrid / fuse helpers
-├── frontend/              <- Vite React + Leaflet/OpenStreetMap dashboard shell
-└── build_dataset.py       <- run this to (re)build the clean dataset
+│   ├── imd_parser.py
+│   └── maharashtra_fusion.py
+├── build_dataset.py
+├── npz_to_csv.py
+├── train_model.py
+├── requirements.txt
+└── context.md
 ```
 
-## Getting the data
-
-Raw IMD data is **not included in this repo** (large binary files, IMD's
-terms don't cover redistribution). Download directly from IMD Pune:
-
-- Rainfall (0.25° × 0.25°): https://www.imdpune.gov.in/cmpg/Griddata/Rainfall_25_Bin.html
-- Max Temperature (1.0° × 1.0°): https://imdpune.gov.in/cmpg/Griddata/Max_1_Bin.html
-- Min Temperature (1.0° × 1.0°): https://www.imdpune.gov.in/cmpg/Griddata/Min_1_Bin.html
-
-Pick a year, download the `.GRD`/`.grd` file, drop it in the matching
-`datasets/raw_data/<type>/` folder. Filenames just need a 4-digit year
-somewhere in them — the script auto-detects it.
-
-## Running the pipeline
+## Rebuild The Dataset
 
 ```bash
-pip install numpy
+python -m pip install -r requirements.txt
 python build_dataset.py
 ```
 
-The script:
-1. Scans all three `raw_data` subfolders
-2. Only processes years where **all three** files (rainfall + maxT + minT) are present
-3. Crops each year to the Maharashtra bounding box (15.5–22.0°N, 72.5–80.5°E)
-4. Regrids temperature onto rainfall's finer 0.25° grid
-5. Stacks them into one `(days, lat, lon, 3)` tensor
-6. Saves a new timestamped file to `datasets/clean_data/` — never overwrites previous runs
+The builder scans the three raw-data folders, processes only years where rainfall, max temperature, and min temperature are all present, then writes a timestamped clean `.npz` without overwriting earlier runs.
 
-Output filename example: `maharashtra_climate_2020-2025_built_2026-06-28_1154.npz`
+Current verified clean tensor shape after adding 2015-2025 data: `(4018, 27, 33, 3)`.
 
-Current Maharashtra crop facts:
+## Train The Model
 
-- Rainfall grid shape: `27 lat x 33 lon = 891 cells`
-- Lat range used: `15.5°N` to `22.0°N`
-- Lon range used: `72.5°E` to `80.5°E`
-- This is a scope expansion for more coverage and more grid cells, not a resolution fix; per-cell resolution remains IMD's native 0.25° rainfall grid.
-- Latest clean build after adding the 2015-2025 raw files uses complete
-  years `2015` through `2025`, with final tensor shape `(4018, 27, 33, 3)`.
+Use Google Colab or Kaggle with a GPU runtime. The script defaults to CUDA and fails clearly if CUDA is unavailable.
 
-## Running the frontend
+```bash
+python train_model.py --epochs 10 --batch-size 32
+```
 
-The frontend is a standard Vite React app using Leaflet and OpenStreetMap
-tiles. It needs no API key, no signup, and no payment method on file. This
-is intentional: the project avoids services that require a billing account
-even when they advertise a nominal free tier.
+For tiny local syntax or smoke checks only, pass `--device cpu` deliberately. Do not run full training on a local CPU machine.
+
+The script saves:
+
+- `best_model.pt`
+- `metrics.json`
+- `test_metrics.csv`
+- `training_history.csv`
+- `test_metrics_comparison.png`
+- local-only `test_predictions.npz` unless you keep the default ignore policy
+
+## Run The Frontend
 
 ```bash
 cd frontend
@@ -97,43 +115,33 @@ npm install
 npm run dev
 ```
 
-For later free deployment on Vercel or Netlify, use:
-
-- build command: `npm run build`
-- publish directory: `frontend/dist`
+The dashboard uses Leaflet + OpenStreetMap tiles and does not require an API key, payment card, or backend service.
 
 Current frontend scope:
 
-- Leaflet map centered on Maharashtra with OpenStreetMap standard tiles
-- 27x33 Maharashtra grid overlay loaded from `frontend/src/data/maharashtra-grid-placeholder.json`
-- Maharashtra boundary overlay loaded locally from
-  `frontend/src/data/maharashtra-boundary.geojson`
-- grid cells clipped to the state boundary using each cell center point
-- current clipped placeholder grid renders `450` cells inside/on the
-  Maharashtra boundary, down from the full rectangular `891` cells
-- rainfall legend
-- blank reserved panels for what-if sliders, 3-day forecast chart, and anomaly flags
+- Maharashtra map centered on the IMD grid region
+- 27 x 33 placeholder grid contract
+- Grid clipped to the real Maharashtra boundary by cell center point
+- 450 rendered cells after clipping, down from the rectangular 891 cells
+- Explicit local boundary outline drawn above the grid
+- Reserved panels for future what-if controls, forecast output, and anomaly flags
 
-The boundary is drawn from local vector data instead of relying on the base
-tile layer's border rendering. This is deliberate for an ISRO submission:
-the app should not depend on third-party tile styling for politically
-sensitive border accuracy.
+## What Is Next
 
-## Loading the clean dataset (for training)
+- Add the analog what-if engine using historical nearest-neighbour matching.
+- Add grid-cell rainfall and heat anomaly flagging from historical percentiles.
+- Connect real model outputs into the frontend forecast panel.
+- Integrate INSAT/MOSDAC channels later if access is available.
 
-```python
-import numpy as np
-data = np.load("datasets/clean_data/maharashtra_climate_....npz")
-fused = data["fused"]       # shape (days, lat, lon, 3) -- [rainfall, maxT, minT]
-dates = data["dates"]       # "YYYY-MM-DD" strings, aligned to fused
-lats, lons = data["lats"], data["lons"]
-```
+## Framing Notes
 
-## Data source citations
+This project does not claim ward-level resolution, current flood-risk modeling, or replacement of physics-based numerical weather prediction. It is a data-fusion and decision-support prototype built from national datasets, with careful separation between verified implementation and planned scope.
 
-- Rainfall: Pai D.S. et al. (2014), *Development of a new high spatial
-  resolution (0.25°×0.25°) long period (1901-2010) daily gridded rainfall
-  data set over India*, MAUSAM, 65(1), pp1-18.
-- Temperature: Srivastava A.K., Rajeevan M., Kshirsagar S.R. (2009),
-  *Development of High Resolution Daily Gridded Temperature Data Set
-  (1969-2005) for the Indian Region*, Atmospheric Science Letters.
+## Citations
+
+- Pai D.S. et al. (2014), *Development of a new high spatial resolution (0.25 x 0.25) long period daily gridded rainfall data set over India*, MAUSAM, 65(1), pp. 1-18.
+- Srivastava A.K., Rajeevan M., Kshirsagar S.R. (2009), *Development of High Resolution Daily Gridded Temperature Data Set for the Indian Region*, Atmospheric Science Letters.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

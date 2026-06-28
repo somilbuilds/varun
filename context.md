@@ -30,8 +30,8 @@ Three pillars, in order of what's actually been built vs. only proposed:
 
 1. **Data fusion** (IMD + INSAT into one Maharashtra-grid tensor) — **partially
    built and verified on real data**, INSAT not yet integrated (see §5).
-2. **Short-term ConvLSTM prediction** (rainfall + temp, few days ahead) —
-   **not yet built**, next step.
+2. **Short-term ConvLSTM prediction** (rainfall + temp, one-day-ahead demo) —
+   **built and evaluated on real held-out data** (see §5).
 3. **What-if scenario engine** (historical-analog matching, NOT a physics
    simulation) — **not yet built**, conceptually designed only.
 
@@ -180,36 +180,46 @@ All of this is implemented and tested against real uploaded IMD files
   because Mapbox requires a payment card on file even for free-tier usage.
   This student hackathon project should avoid any service that requires a
   billing account or card, even when nominally free.
+- `train_model.py` — Stage 2 GPU-first ConvLSTM training script. Loads the
+  clean `.npz`, builds 10-day input sequences to predict day+1, trains the
+  locked small two-layer ConvLSTM (32 filters then 16 filters, 3x3 kernels),
+  compares against persistence and day-of-year climatology, masks static
+  missing cells, and writes real metrics/artifacts. The script defaults to
+  CUDA and should be run on Google Colab/Kaggle GPU, not on the user's local
+  CPU machine except for tiny syntax/smoke checks with `--device cpu`.
+- Latest verified training run:
+  `outputs/training/run_2026-06-28_181137/`, trained on CUDA for 10 epochs
+  using the 2015-2025 clean dataset. Held-out test period was 2024-01-01
+  through 2025-12-31. Real RMSE results:
+  ConvLSTM rainfall **9.61 mm** vs persistence **12.47 mm** vs climatology
+  **11.53 mm**; max temp **1.05 degC** vs **1.05 degC** vs **2.02 degC**;
+  min temp **0.83 degC** vs **0.88 degC** vs **1.84 degC**. The checkpoint
+  `best_model.pt` is small (~277 KB) and safe to commit. `test_predictions.npz`
+  contains held-out truth tensors derived from licensed source data, so it
+  must stay gitignored and be regenerated locally/Colab-side when needed.
 
 ## 6. What's NOT built yet (next steps, in order)
 
-1. **train_model.py** (Stage 2) — load the clean `.npz`, build sequences
-   (e.g. 10 past days -> predict day+1), train a small 2-layer ConvLSTM
-   (32 filters then 16 filters, 3x3 kernel, per the architecture already
-   designed), compare against two baselines: persistence (yesterday=today)
-   and climatology (historical mean for that day-of-year). Output real
-   RMSE/MAE for all three. This produces the REAL version of "Figure 4"
-   (validation chart) that currently has placeholder X.X values in the deck.
-2. **What-if / analog engine** — given a user-specified perturbation
+1. **What-if / analog engine** — given a user-specified perturbation
    (Δrainfall %, Δtemp °C, Δmonsoon-onset days), search the historical
    archive (the clean dataset) for the most similar past state via nearest-
    neighbour distance, return that year/date as the "analog" projection.
    Simple, explainable, no physics simulation — this is intentional, not
    a corner cut (see §3, no fabricated-sophistication rule).
-3. **Grid-cell anomaly flagging** — compare a forecast/scenario output per
+2. **Grid-cell anomaly flagging** — compare a forecast/scenario output per
    cell against that cell's historical percentile for the same day-of-year;
    flag cells above e.g. the 90th percentile. Pure post-processing on
    existing outputs, no new model needed.
-4. **Frontend dashboard, next layer** — the Leaflet-based React shell exists,
+3. **Frontend dashboard, next layer** — the Leaflet-based React shell exists,
    but the what-if sliders, 3-day forecast chart, and anomaly flag display
    are intentionally blank reserved components. Next frontend work should
    connect those panels only after real model/analog/anomaly outputs exist;
    do not fake them.
-5. **(Optional, mentioned only, not required to build):** "Bhuvan
+4. **(Optional, mentioned only, not required to build):** "Bhuvan
    compatibility" — output map layers in standard WMS/WFS format. This is
    a documentation/positioning claim, not a feature that needs actual
    implementation for the hackathon.
-6. **(Explicitly deprioritized, do not build unless asked):** an
+5. **(Explicitly deprioritized, do not build unless asked):** an
    "offline/low-bandwidth mode" UI toggle — judged not worth the build
    effort relative to payoff for this hackathon; only mention as a
    one-line future-scope bullet if there's room in the deck.
@@ -225,8 +235,10 @@ BAH2026/
 │   ├── imd_parser.py
 │   └── maharashtra_fusion.py
 ├── frontend/                                  <- Vite React + Leaflet/OpenStreetMap dashboard shell
+├── outputs/training/run_2026-06-28_181137/    <- public-safe metrics/checkpoint artifacts
 ├── build_dataset.py
 ├── npz_to_csv.py
+├── train_model.py
 ├── requirements.txt
 ├── .gitignore        <- excludes raw_data/*, clean_data/*.npz, __pycache__, venv
 ├── README.md
@@ -234,15 +246,16 @@ BAH2026/
 ```
 
 - Python venv already set up by the user (Windows, PowerShell).
-- Python dependency currently tracked in `requirements.txt`: `numpy`.
+- Python dependencies currently tracked in `requirements.txt`: `numpy`,
+  `torch`, and `matplotlib`.
 - Frontend dependencies are managed separately in `frontend/package.json`
   and `frontend/package-lock.json`. The frontend uses Leaflet with
   OpenStreetMap tiles and does not require an API key, token, signup, or
   payment method.
-- TensorFlow/PyTorch NOT yet installed — needed for the next step
-  (train_model.py). User has confirmed training is lightweight, free-tier
-  GPU (Colab/Kaggle) is sufficient, this is a one-time/occasional retrain,
-  not a continuous-compute system.
+- PyTorch is used for `train_model.py`. Full model training must be done on
+  Google Colab/Kaggle GPU. Do **not** run full training on the user's local
+  CPU machine again; local checks should be limited to syntax/import/help or
+  deliberately tiny smoke tests.
 
 ## 8. Tone / framing rules for any generated text (slides, docstrings, comments)
 
