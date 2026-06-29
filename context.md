@@ -167,6 +167,16 @@ All of this is implemented and tested against real uploaded IMD files
   reserved blank panels for future what-if sliders, 3-day forecast chart,
   and anomaly flags. VERIFIED with `npm run build`; no backend/database is
   included.
+- Dashboard UX upgrade (2026-06-29): left vertical channel toolbar (rainfall,
+  max/min temp, mean temp, diurnal range), grid/gradient render toggle,
+  bottom daily timeline slider with play/pause (History 2015–2025, Now 10-day
+  window, Tomorrow observed→forecast), and live anomaly preview panel comparing
+  the current frame to climatology mean (honest thresholds, not percentile-based
+  yet). Timeline is explicitly **daily** — IMD archive is one record per day.
+- Dashboard perf fix (2026-06-29): removed 2.9 MB boundary GeoJSON from the JS
+  bundle (now lazy-fetched for outline only); precomputed 450-cell clip list in
+  `clipped-cells.json` (~76 KB); fast cell-based gradient; API response cache +
+  12s fetch timeout; backend climatology cache. JS bundle dropped ~3.3 MB → ~444 KB.
 - Frontend boundary decision: Maharashtra's own state boundary is now drawn
   explicitly from local vector data
   `frontend/src/data/maharashtra-boundary.geojson`, downloaded from the
@@ -229,8 +239,8 @@ All of this is implemented and tested against real uploaded IMD files
     - GET /api/health — liveness check
     - GET /api/historical/climatology — per-cell temporal mean across all 4018 days
     - GET /api/historical/{YYYY-MM-DD} — real historical grid for any date 2015-2025
-    - GET /api/nowcast — latest realtime state (data_as_of clearly returned)
-    - GET /api/forecast/tomorrow — ConvLSTM prediction grid + prediction_date
+    - GET /api/nowcast — latest realtime state + `daily_frames[]` (10-day window)
+    - GET /api/forecast/tomorrow — ConvLSTM prediction + observed/forecast `daily_frames[]`
     - GET /api/validation-metrics — contents of metrics.json verbatim
 
 ## 6. What's NOT built yet (next steps, in order)
@@ -245,9 +255,9 @@ All of this is implemented and tested against real uploaded IMD files
    cell against that cell's historical percentile for the same day-of-year;
    flag cells above e.g. the 90th percentile. Pure post-processing on
    existing outputs, no new model needed.
-3. **Frontend dashboard, remaining panels** — what-if sliders and anomaly flag
-   display are still placeholder panels. Connect them only after the analog
-   engine and anomaly flagging are built.
+3. **Frontend dashboard, remaining panels** — what-if sliders remain placeholder
+   (analog engine not built). Anomaly panel now shows a live preview vs
+   climatology mean; full percentile-based flagging still planned.
 4. **(Optional, mentioned only, not required to build):** "Bhuvan
    compatibility" — output map layers in standard WMS/WFS format. This is
    a documentation/positioning claim, not a feature that needs actual

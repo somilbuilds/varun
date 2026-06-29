@@ -76,24 +76,26 @@ def _find_clean_dataset() -> Path:
     return max(candidates, key=lambda p: p.stat().st_size)
 
 
-def _load_clean_dataset() -> tuple[np.ndarray, list[str]]:
-    """Load (data, dates) from the clean dataset. Cached via module-level dict."""
+def _load_clean_dataset() -> tuple[np.ndarray, list[str], dict[str, int]]:
+    """Load (data, dates, date_index) from the clean dataset. Cached at module level."""
     if _ds_cache:
-        return _ds_cache["data"], _ds_cache["dates"]
+        return _ds_cache["data"], _ds_cache["dates"], _ds_cache["date_index"]
     path = _find_clean_dataset()
     print(f"[api_server] Loading clean dataset: {path}", flush=True)
     with np.load(path, allow_pickle=False) as archive:
-        # Key is 'fused' (shape N, 27, 33, 3) — confirmed from build_dataset.py output
         data = archive["fused"]
         dates = archive["dates"].astype(str).tolist()
+    date_index = {day: idx for idx, day in enumerate(dates)}
     _ds_cache["data"] = data
     _ds_cache["dates"] = dates
+    _ds_cache["date_index"] = date_index
     print(f"[api_server] Loaded {len(dates)} days, shape {data.shape}", flush=True)
-    return data, dates
+    return data, dates, date_index
 
 
-# Module-level simple cache so we don't re-read 7 MB on every request
+# Module-level cache: dataset arrays, date list, O(1) date lookup, precomputed climatology
 _ds_cache: dict[str, Any] = {}
+_climatology_payload: dict[str, Any] | None = None
 
 
 def _grid_to_payload(
@@ -138,6 +140,34 @@ def _grid_to_payload(
     }
 
 
+def _values_dict_from_grid(grid: np.ndarray) -> dict[str, list]:
+    """Convert a (27, 33, 3) grid slice to JSON-safe channel value matrices."""
+    values: dict[str, list] = {}
+    for i, ch in enumerate(CHANNELS):
+        arr = grid[..., i] if grid.ndim == 3 else grid
+        rows_list = []
+        for r in range(arr.shape[0]):
+            row = []
+            for c in range(arr.shape[1]):
+                v = float(arr[r, c])
+                row.append(None if not np.isfinite(v) else round(v, 3))
+            rows_list.append(row)
+        values[ch] = rows_list
+    return values
+
+
+def _daily_frames_from_fused(fused: np.ndarray, dates: list[str]) -> list[dict]:
+    """Build timeline frames for the frontend slider (one frame per day)."""
+    frames = []
+    for i, day in enumerate(dates):
+        frames.append({
+            "date": day,
+            "frame_type": "observed",
+            "values": _values_dict_from_grid(fused[i]),
+        })
+    return frames
+
+
 def _all_channels_payload(grid: np.ndarray) -> dict[str, Any]:
     """Return all 3 channels in one go, keyed by channel name."""
     out: dict[str, Any] = {
@@ -151,16 +181,7 @@ def _all_channels_payload(grid: np.ndarray) -> dict[str, Any]:
         "values": {},
         "units": CHANNEL_UNITS,
     }
-    for i, ch in enumerate(CHANNELS):
-        arr = grid[..., i] if grid.ndim == 3 else grid
-        rows_list = []
-        for r in range(arr.shape[0]):
-            row = []
-            for c in range(arr.shape[1]):
-                v = float(arr[r, c])
-                row.append(None if not np.isfinite(v) else round(v, 3))
-            rows_list.append(row)
-        out["values"][ch] = rows_list
+    out["values"] = _values_dict_from_grid(grid)
     return out
 
 
@@ -182,10 +203,12 @@ def historical_climatology() -> dict:
     IMPORTANT: this route must be registered BEFORE /historical/{date_str}
     so FastAPI doesn't swallow 'climatology' as a date parameter.
     """
-    data, dates = _load_clean_dataset()
+    global _climatology_payload
+    if _climatology_payload is not None:
+        return _climatology_payload
 
-    # data shape: (N, 27, 33, 3)
-    mean_grid = np.nanmean(data, axis=0)   # (27, 33, 3)
+    data, dates, _ = _load_clean_dataset()
+    mean_grid = np.nanmean(data, axis=0)
 
     payload = _all_channels_payload(mean_grid)
     payload["type"] = "climatology"
@@ -195,6 +218,7 @@ def historical_climatology() -> dict:
         f"Per-cell temporal mean over {len(dates)} days "
         f"({dates[0]} to {dates[-1]})"
     )
+    _climatology_payload = payload
     return payload
 
 
@@ -210,17 +234,17 @@ def historical_date(date_str: str) -> dict:
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str!r}. Use YYYY-MM-DD.")
 
-    data, dates = _load_clean_dataset()
+    data, dates, date_index = _load_clean_dataset()
 
-    if date_str not in dates:
+    idx = date_index.get(date_str)
+    if idx is None:
         raise HTTPException(
             status_code=404,
             detail=f"Date {date_str} not found in dataset. "
                    f"Available range: {dates[0]} to {dates[-1]}.",
         )
 
-    idx = dates.index(date_str)
-    grid = data[idx]   # (27, 33, 3)
+    grid = data[idx]
 
     payload = _all_channels_payload(grid)
     payload["date"] = date_str
@@ -259,6 +283,8 @@ def nowcast() -> dict:
     payload["fetched_at"] = fetched_at
     payload["source"] = source
     payload["window_dates"] = dates
+    payload["daily_frames"] = _daily_frames_from_fused(fused, dates)
+    payload["timeline_resolution"] = "daily"
     payload["lag_note"] = (
         "IMD near-real-time data typically has a 1-day lag. "
         "'data_as_of' reflects the actual latest date available from IMD, "
@@ -290,6 +316,11 @@ def forecast_tomorrow() -> dict:
         fetched_at = str(archive["fetched_at"])
         checkpoint = str(archive["checkpoint"])
 
+    observed_grid = None
+    if REALTIME_STATE.is_file():
+        with np.load(REALTIME_STATE, allow_pickle=False) as state:
+            observed_grid = state["fused"][-1]
+
     payload = _all_channels_payload(prediction)
     payload["type"] = "forecast"
     payload["prediction_date"] = prediction_date
@@ -298,6 +329,20 @@ def forecast_tomorrow() -> dict:
     payload["fetched_at"] = fetched_at
     payload["model"] = "ConvLSTM (2-layer, 32+16 filters, 3×3 kernel)"
     payload["checkpoint"] = checkpoint
+    payload["timeline_resolution"] = "daily"
+    frames = []
+    if observed_grid is not None:
+        frames.append({
+            "date": data_as_of,
+            "frame_type": "observed",
+            "values": _values_dict_from_grid(observed_grid),
+        })
+    frames.append({
+        "date": prediction_date,
+        "frame_type": "forecast",
+        "values": _values_dict_from_grid(prediction),
+    })
+    payload["daily_frames"] = frames
     payload["disclaimer"] = (
         "This is a short-range AI prediction, NOT a physics-based numerical "
         "weather forecast. It is intended as a research/demo tool only."

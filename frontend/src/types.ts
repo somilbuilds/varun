@@ -40,32 +40,42 @@ export type ApiBbox = {
 /** Shape descriptor as returned by every grid endpoint. */
 export type ApiGridShape = { rows: number; cols: number };
 
+export type ApiChannelValues = {
+  rainfall: (number | null)[][];
+  max_temp: (number | null)[][];
+  min_temp: (number | null)[][];
+};
+
+/** One day in a multi-day timeline response */
+export type ApiDailyFrame = {
+  date: string;
+  frame_type?: "observed" | "forecast";
+  values: ApiChannelValues;
+};
+
 /** All-channels grid payload (historical, climatology, nowcast, forecast). */
 export type ApiGridPayload = {
   type: "historical" | "climatology" | "nowcast" | "forecast";
   bbox: ApiBbox;
   gridShape: ApiGridShape;
   /** Row-major values per channel (null = missing/NaN). */
-  values: {
-    rainfall: (number | null)[][];
-    max_temp: (number | null)[][];
-    min_temp: (number | null)[][];
-  };
+  values: ApiChannelValues;
   units: { rainfall: string; max_temp: string; min_temp: string };
-  // Optional per-type fields
-  date?: string;               // historical
-  date_range?: [string, string]; // climatology
-  n_days?: number;             // climatology
-  description?: string;        // climatology
-  data_as_of?: string;         // nowcast, forecast
-  fetched_at?: string;         // nowcast, forecast
-  source?: string;             // nowcast
-  window_dates?: string[];     // nowcast
-  lag_note?: string;           // nowcast
-  prediction_date?: string;    // forecast
-  input_window?: { start: string; end: string }; // forecast
-  model?: string;              // forecast
-  disclaimer?: string;         // forecast
+  date?: string;
+  date_range?: [string, string];
+  n_days?: number;
+  description?: string;
+  data_as_of?: string;
+  fetched_at?: string;
+  source?: string;
+  window_dates?: string[];
+  daily_frames?: ApiDailyFrame[];
+  timeline_resolution?: "daily";
+  lag_note?: string;
+  prediction_date?: string;
+  input_window?: { start: string; end: string };
+  model?: string;
+  disclaimer?: string;
 };
 
 /** Single metric row in metrics.json */
@@ -105,3 +115,16 @@ export type ApiMetrics = {
 
 /** View modes for the map controls */
 export type ViewMode = "climatology" | "historical" | "nowcast" | "forecast";
+
+/** Base API channels plus derived display channels */
+export type DisplayChannel =
+  | "rainfall"
+  | "max_temp"
+  | "min_temp"
+  | "mean_temp"
+  | "temp_range";
+
+export type MapRenderMode = "grid" | "gradient";
+
+export const HISTORY_START = "2015-01-01";
+export const HISTORY_END = "2025-12-31";
