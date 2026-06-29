@@ -59,7 +59,7 @@ These are real metrics from the committed training artifacts, not placeholder pr
 - GPU-first ConvLSTM training and baseline evaluation script.
 - Public-safe training result bundle with metrics, training history, comparison figure, and a small checkpoint.
 - **FastAPI backend server** (`api_server.py`) serving 5 real data endpoints (climatology, historical dates, nowcast, tomorrow's forecast, and training metrics) with strict error handling.
-- **Vite React + Leaflet frontend** connected to the real backend, with full mode switching (climatology, history date scrubber, nowcast, and tomorrow's forecast) and channel switching (Rainfall, Max Temp, Min Temp).
+- **Vite React + Leaflet frontend** connected to the real backend, featuring channel toolbar, grid/gradient map rendering, historical timeline, realtime and forecast views, validation charts, and API status indicators.
 - **Validation metrics chart** rendered dynamically using real metrics from the FastAPI backend.
 - Explicit local boundary drawing so the grid does not depend on base-map border styling (450 clipped Maharashtra cells).
 
@@ -89,24 +89,35 @@ BAH2026/
 │   ├── raw_data/{rainfall,maxtemp,mintemp}/   # local only, gitignored except .gitkeep
 │   ├── clean_data/                            # local only, gitignored except .gitkeep
 │   └── realtime/                              # local only, gitignored except .gitkeep
-├── frontend/                                  # Vite React + Leaflet dashboard
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ClimateMap.tsx                 # Renders the Leaflet map overlay
-│   │   │   ├── DateScrubber.tsx               # Pick historical dates
-│   │   │   └── ValidationChart.tsx            # Plot RMSE comparison charts
-│   │   ├── api.ts                             # Backend API client
-│   │   ├── App.tsx                            # Main dashboard application
-│   │   └── grid.ts                            # Grid spatial clipping helper
+├── frontend/
+│   ├── public/
+│   │   └── maharashtra-boundary.geojson
+│   └── src/
+│       ├── components/
+│       │   ├── ClimateMap.tsx
+│       │   ├── ChannelToolbar.tsx
+│       │   ├── TimeSlider.tsx
+│       │   ├── GradientOverlay.tsx
+│       │   ├── GridCellsLayer.tsx
+│       │   ├── ValidationChart.tsx
+│       │   ├── ApiStatusBanner.tsx
+│       │   └── ...
+│       ├── data/
+│       ├── hooks/
+│       ├── api.ts
+│       ├── App.tsx
+│       ├── gradientCanvas.ts
+│       └── gridCells.ts
 ├── outputs/training/run_2026-06-28_181137/    # public-safe result summary
 ├── scripts/
 │   ├── imd_parser.py
-│   └── maharashtra_fusion.py
-├── api_server.py                              # FastAPI backend server
+│   ├── maharashtra_fusion.py
+│   └── generate_clipped_cells.py
+├── api_server.py
 ├── build_dataset.py
-├── fetch_realtime.py                          # Fetch latest realtime data from IMD
-├── nowcast.py                                 # Nowcasting report generator
-├── predict_latest.py                          # Prediction generator
+├── fetch_realtime.py
+├── nowcast.py
+├── predict_latest.py
 ├── npz_to_csv.py
 ├── train_model.py
 ├── requirements.txt
@@ -164,7 +175,7 @@ The Vite development server will start, typically at http://localhost:5174/ or h
 ## Roadmap
 
 - Add the analog what-if engine using historical nearest-neighbour matching (perturbation sliders).
-- Add grid-cell rainfall and heat anomaly flagging from historical percentiles (percentile highlights).
+- Wire the anomaly preview panel to backend-generated percentile anomaly flags.
 - Integrate INSAT/MOSDAC channels later if access is available.
 
 ## Framing Notes
